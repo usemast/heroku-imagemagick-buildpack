@@ -1,13 +1,24 @@
-FROM heroku/heroku:20-build
+FROM heroku/heroku:24-build
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-ARG COMPILE_VERSION_LIBDE265=1.0.8
-ARG COMPILE_VERSION_LIBHEIF=1.12.0
-ARG COMPILE_VERSION_LIBWEBP=1.2.1-rc2
-ARG COMPILE_VERSION_IMAGEMAGICK=7.1.0-4
+ARG COMPILE_VERSION_LIBDE265=1.0.15
+ARG COMPILE_VERSION_LIBHEIF=1.18.2
+ARG COMPILE_VERSION_LIBWEBP=1.3.2
+ARG COMPILE_VERSION_IMAGEMAGICK=7.1.1-39
+
+USER root
 
 RUN apt-get -yq update \
+  && apt-get install -yq \
+     build-essential \
+     pkg-config \
+     autotools-dev \
+     automake \
+     libtool \
+     curl \
+     cmake \
+  && apt-get -yq update \
   # Install install the latest libde265 library
   && curl -sSL --retry 3 https://github.com/strukturag/libde265/releases/download/v$COMPILE_VERSION_LIBDE265/libde265-$COMPILE_VERSION_LIBDE265.tar.gz | tar zx \
   && cd libde265-$COMPILE_VERSION_LIBDE265 \
@@ -18,8 +29,8 @@ RUN apt-get -yq update \
   # Install install the latest libheif library
   && curl -sSL --retry 3 https://github.com/strukturag/libheif/releases/download/v$COMPILE_VERSION_LIBHEIF/libheif-$COMPILE_VERSION_LIBHEIF.tar.gz | tar zx \
   && cd libheif-$COMPILE_VERSION_LIBHEIF \
-  && ./autogen.sh \
-  && ./configure \
+  && mkdir build && cd build \
+  && cmake --preset=release .. \
   && make -j$(nproc) \
   && make install \
   # Install install the latest libwebp library
@@ -30,7 +41,7 @@ RUN apt-get -yq update \
   && make -j$(nproc) \
   && make install \
   # Get, configure and install imagemagick
-  && curl -sSL https://imagemagick.org/download/releases/ImageMagick-$COMPILE_VERSION_IMAGEMAGICK.tar.bz2 | tar jx \
+  && curl -sSL https://imagemagick.org/archive/releases/ImageMagick-$COMPILE_VERSION_IMAGEMAGICK.tar.xz | tar Jx \
   && cd ImageMagick-$COMPILE_VERSION_IMAGEMAGICK \
   && ./configure --prefix=/usr/src/imagemagick --with-heic=yes --with-webp=yes --with-openexr=no --with-x=no --disable-docs \
   && make -j$(nproc) \
